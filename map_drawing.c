@@ -1,12 +1,124 @@
 #include "cub3d.h"
 
+void minimap_pixel_put(int x, int y, t_image *image, int color)
+{
+    if (x >= 0 && x < window_WIDTH && y >= 0 && y < window_HEIGHT)
+    {
+        int pixel_index = (y * image->line_length) + (x * (image->bpp / 8));
+        *(unsigned int *)(image->addr + pixel_index) = color;
+    }
+}
+
+void draw_minimap_rect(t_image *image, int x, int y, int width, int height, int color)
+{
+    int i, j;
+    for (j = 0; j < height; j++)
+    {
+        for (i = 0; i < width; i++)
+        {
+            minimap_pixel_put(x + i, y + j, image, color);
+        }
+    }
+}
+
+void	draw_minimap_player(t_mlxing *mlx)
+{
+	int player_x;
+	int player_y;
+	int player_size;
+
+	player_x = mlx->map->player->center_x * MINIMAP_SCALE;
+	player_y = mlx->map->player->center_y * MINIMAP_SCALE;
+	player_size = 4;  // Size of player on the minimap
+	draw_minimap_rect(mlx->image, player_x - player_size / 2, player_y - player_size / 2, player_size, player_size, MINIMAP_COLOR_PLAYER);
+}
+
+void	draw_minimap_rays(t_mlxing *mlx)
+{
+	int 	i;
+	int 	step;
+	double	start_angle;
+    double	ray_step;
+	double	ray_angle;
+	double	ray_dx;
+	double	ray_dy;
+	double	ray_x;
+	double	ray_y;
+	int		grid_x;
+	int		grid_y;
+	int		screen_x;
+	int		screen_y;
+
+	i = 0;
+	start_angle = mlx->map->player->angle - (FOV / 2);
+	ray_step = FOV / NUM_RAYS;
+	while (i < NUM_RAYS)
+    {
+		step = 0;
+		ray_angle = start_angle + i * ray_step;
+		ray_dx = cos(ray_angle);
+		ray_dy = sin(ray_angle);
+		ray_x = mlx->map->player->center_x;
+		ray_y = mlx->map->player->center_y;
+		while (step < MAX_STEPS)
+		{
+			ray_x += ray_dx * STEP_SIZE;
+			ray_y += ray_dy * STEP_SIZE;
+			grid_x = ray_x / mlx->map->cell_width;
+			grid_y = ray_y / mlx->map->cell_height;
+			// Stop drawing the ray if it hits a wall or goes out of bounds
+			if (grid_x < 0 || grid_y < 0 || grid_x >= mlx->map->map_width || grid_y >= mlx->map->map_height ||
+			mlx->map->grid[grid_y][grid_x] == '1')
+				break;
+			screen_x = ray_x * MINIMAP_SCALE;
+			screen_y = ray_y * MINIMAP_SCALE;
+			minimap_pixel_put(screen_x, screen_y, mlx->image, MINIMAP_COLOR_RAY);
+			step++;
+		}
+		i++;
+	}
+}
+
+void draw_minimap(t_mlxing *mlx)
+{
+    int cell_width = mlx->map->cell_width * MINIMAP_SCALE;
+    int cell_height = mlx->map->cell_height * MINIMAP_SCALE;
+	int	y;
+	int x;
+
+	x = 0;
+	y = 0;
+    // Draw map grid
+    while (y < mlx->map->map_height)
+    {
+		x = 0;
+		while (x < mlx->map->map_width)
+        {
+			int screen_x = x * cell_width;
+			int screen_y = y * cell_height;
+
+			if (mlx->map->grid[y][x] == '1')  // Wall
+				draw_minimap_rect(mlx->image, screen_x, screen_y, cell_width, cell_height, MINIMAP_COLOR_WALL);
+			else  // Empty space
+				 draw_minimap_rect(mlx->image, screen_x, screen_y, cell_width, cell_height, MINIMAP_COLOR_EMPTY);
+			x++;
+		}
+		y++;
+	}
+    // Draw player
+    draw_minimap_player(mlx);
+    // Draw rays
+	draw_minimap_rays(mlx);
+}
+
+
 void	my_pixel_put(int x, int y, t_image *image, int color)
 {
 	int pixel_index;
 
 	if (x < 0 || x >= window_WIDTH || y < 0 || y >= window_HEIGHT)
     {
-        printf("Pixel out of bounds: x=%d, y=%d\n", x, y);
+        //printf("Pixel out of bounds: x=%d, y=%d\n", x, y);
         return;
     }
 	pixel_index = (y * image->line_length) + (x * (image->bpp / 8));
@@ -30,363 +142,270 @@ void clear_image(t_image *image, int color)
 	}
 }
 
-t_ray cast_ray(t_mlxing *mlx, double ray_angle)
+
+double calculate_distance(double x1, double y1, double x2, double y2)
 {
-    t_ray ray;
-    int start_x = mlx->map->player->center_x;
-    int start_y = mlx->map->player->center_y;
-
-    double ray_dx = cos(ray_angle);
-    double ray_dy = sin(ray_angle);
-
-    ray.distance = 0;
-    ray.hit_wall = 0;
-
-    double ray_length = 0.0;
-    int step = 0;
-
-    while (!ray.hit_wall && step < MAX_STEPS)
-    {
-        int ray_end_x = start_x + ray_dx * ray_length;
-        int ray_end_y = start_y + ray_dy * ray_length;
-        ray_length += STEP_SIZE;
-
-        if (ray_end_x < 0 || ray_end_x >= mlx->map->map_width * mlx->map->cell_width ||
-            ray_end_y < 0 || ray_end_y >= mlx->map->map_height * mlx->map->cell_height ||
-            mlx->map->grid[ray_end_y / mlx->map->cell_height][ray_end_x / mlx->map->cell_width] == '1')
-        {
-            ray.hit_wall = 1;
-            ray.distance = ray_length;
-
-            // Check for corners by looking at adjacent cells
-            int grid_x = ray_end_x / mlx->map->cell_width;
-            int grid_y = ray_end_y / mlx->map->cell_height;
-
-            ray.is_corner = 0;
-            if (grid_y > 0 && mlx->map->grid[grid_y - 1][grid_x] == '0')
-                ray.is_corner = 1;
-            if (grid_y < mlx->map->map_height - 1 && mlx->map->grid[grid_y + 1][grid_x] == '0')
-                ray.is_corner = 1;
-            if (grid_x > 0 && mlx->map->grid[grid_y][grid_x - 1] == '0')
-                ray.is_corner = 1;
-            if (grid_x < mlx->map->map_width - 1 && mlx->map->grid[grid_y][grid_x + 1] == '0')
-                ray.is_corner = 1;
-        }
-
-        step++;
-    }
-
-    return ray;
+    double distance = sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+	//printf("dissss =============== %f\n", distance);
+	//printf("x1=================%f\n", x1);
+	//printf("x2=================%f\n", x2);
+	//printf("y1=================%f\n", y1);
+	//printf("y2=================%f\n", y2);
+	return distance;
 }
 
-
-
-//t_ray cast_ray(t_mlxing *mlx, double ray_angle)
-//{
-//    t_ray ray;
-//    int start_x = mlx->map->player->center_x;
-//    int start_y = mlx->map->player->center_y;
-
-//    double ray_dx = cos(ray_angle);
-//    double ray_dy = sin(ray_angle);
-
-//    ray.distance = 0;
-//    ray.hit_wall = 0;
-
-//    double ray_length = 0.0;
-//    int step = 0;
-
-//    while (!ray.hit_wall && step < MAX_STEPS)
-//    {
-//        int ray_end_x = start_x + ray_dx * ray_length;
-//        int ray_end_y = start_y + ray_dy * ray_length;
-//        ray_length += STEP_SIZE;
-
-//        // Ensure ray doesn't go out of bounds
-//        if (ray_end_x < 0 || ray_end_x >= mlx->map->map_width * mlx->map->cell_width ||
-//            ray_end_y < 0 || ray_end_y >= mlx->map->map_height * mlx->map->cell_height)
-//        {
-//            ray.hit_wall = 1;
-//            ray.distance = MAX_DISTANCE;  // Set to maximum visible distance
-//            break;
-//        }
-
-//        // Check for wall hit
-//        if (mlx->map->grid[ray_end_y / mlx->map->cell_height][ray_end_x / mlx->map->cell_width] == '1')
-//        {
-//            ray.hit_wall = 1;
-//            ray.distance = ray_length;
-//        }
-
-//        step++;
-//    }
-
-//    if (step >= MAX_STEPS)
-//    {
-//        ray.hit_wall = 1;
-//        ray.distance = MAX_DISTANCE;  // Avoid infinite rays
-//    }
-
-//    return ray;
-//}
-
-
-void draw_vertical_line(t_image *image, int x, int wall_top, int wall_bottom, int color)
+int check_wall_collision(t_mlxing *mlx, double next_y_touch, double next_x_touch)
 {
-    for (int y = wall_top; y <= wall_bottom; y++)
-    {
-        int pattern_color = (y / 10) % 2 == 0 ? color : (color - 0x202020); // Alternating shades
-		printf("%d\n", y);
-        my_pixel_put(x, y, image, pattern_color);
-    }
+    int app_map_x;
+    int app_map_y;
+    
+    // Add boundary checks
+    if (next_x_touch < 0 || next_y_touch < 0)
+		return 1;
+
+	app_map_x = (int)(next_x_touch / CELL_SIZE);
+	app_map_y = (int)(next_y_touch / CELL_SIZE);
+    // Check map boundaries
+    if (app_map_y >= mlx->map->map_height || app_map_x >= mlx->map->map_width)
+        return 1;
+        
+    return (mlx->map->grid[app_map_y][app_map_x] == '1');
 }
-
-
 
 double normalize_angle(double angle)
 {
+    angle = fmod(angle, 2 * M_PI);
     if (angle < 0)
-        angle += 2 * PI;
-    if (angle >= 2 * PI)
-        angle -= 2 * PI;
+        angle += 2 * M_PI;
     return angle;
 }
 
-//void render_3d_view(t_mlxing *mlx)
-//{
-//    int i = 0;
-//    while (i < NUM_RAYS)
-//    {
-//        double ray_angle = normalize_angle(mlx->map->player->angle - (FOV / 2.0) + (i * (FOV / NUM_RAYS)));
-
-//        // Cast the ray and retrieve full collision details
-//        t_ray ray = cast_ray(mlx, ray_angle);
-
-//        // Calculate perpendicular distance to avoid fish-eye distortion
-//        double perp_distance = ray.distance * cos(ray_angle - mlx->map->player->angle);
-
-//        // Calculate wall height on the projection plane
-//        int wall_height = (int)((mlx->map->cell_height / perp_distance) * mlx->ppd);
-
-//        // Determine the start and end points of the vertical line
-//        int wall_start = (window_HEIGHT / 2) - (wall_height / 2);
-//        int wall_end = (window_HEIGHT / 2) + (wall_height / 2);
-
-//        // Draw the vertical slice of the wall
-//        //draw_vertical_line(i, wall_start, wall_end, ray.is_vertical ? DARK_BLUE : WALL_COLOR, mlx);
-//		draw_vertical_line(mlx->image, i, wall_start, wall_end, ray.is_vertical ? DARK_BLUE : WALL_COLOR);
-//		printf("Ray %d: Angle: %f, Distance: %f\n", i, ray_angle, ray.distance);
-//        i++;
-//    }
-//}
-
-
-void render_3d_view(t_mlxing *mlx, double ray_distances[NUM_RAYS])
+float horizontal_inter(t_mlxing *mlx, t_ray *ray)
 {
-    double start_angle = mlx->map->player->angle - (FOV / 2);
-    double ray_step = FOV / NUM_RAYS;
+    float x_step, y_step, y_intercept, x_intercept;
+    float next_x_touch, next_y_touch, horizontal_hit_distance = 0;
 
-    int i = 0;
-    while (i < NUM_RAYS)
+    // Horizontal intersection initialization
+    y_step = CELL_SIZE;
+    x_step = CELL_SIZE / tan(ray->ray_angle);
+    if (ray->is_up)
+        y_step *= -1;
+    if ((ray->is_left && x_step > 0) || (ray->is_right && x_step < 0))
+        x_step *= -1;
+
+    y_intercept = floor(mlx->map->player->center_y / CELL_SIZE) * CELL_SIZE;
+    if (ray->is_down)
+        y_intercept += CELL_SIZE;
+    else if (ray->is_up)
+        y_intercept -= 0.0001; // Avoid skipping grid cells on boundary
+
+    x_intercept = mlx->map->player->center_x + (y_intercept - mlx->map->player->center_y) / tan(ray->ray_angle);
+
+    next_x_touch = x_intercept;
+    next_y_touch = y_intercept;
+
+    ray->h_wall_hit_x = 0;
+    ray->h_wall_hit_y = 0;
+
+    int i = 0, max_iterations = 1000;
+    while (next_x_touch >= 0 && next_x_touch <= mlx->map->map_width * CELL_SIZE &&
+           next_y_touch >= 0 && next_y_touch <= mlx->map->map_height * CELL_SIZE &&
+           i < max_iterations)
     {
-        double ray_angle = start_angle + i * ray_step;
-        t_ray ray = cast_ray(mlx, ray_angle);
-        ray_distances[i] = ray.distance;
-
-        // Clamp ray distance to avoid extreme values
-        if (ray.distance < 1.0)
-            ray.distance = 1.0;
-        if (ray.distance > MAX_DISTANCE)
-            ray.distance = MAX_DISTANCE;
-
-        // Calculate wall height and positions
-        int wall_height = (int)(window_HEIGHT / ray.distance);
-        int wall_top = (window_HEIGHT / 2) - (wall_height / 2);
-        int wall_bottom = (window_HEIGHT / 2) + (wall_height / 2);
-
-        // Clamp wall positions to screen dimensions
-        if (wall_top < 0)
-            wall_top = 0;
-        if (wall_bottom >= window_HEIGHT)
-            wall_bottom = window_HEIGHT - 1;
-
-        // Debugging log
-        printf("Ray %d: Distance = %f, Wall Top = %d, Wall Bottom = %d\n", i, ray.distance, wall_top, wall_bottom);
-
-        // Adjust wall color for brightness
-        int wall_color = WALL_COLOR;
-
-        // Draw the wall
-        draw_vertical_line(mlx->image, i, wall_top, wall_bottom, wall_color);
-
-        // Draw ceiling
-        int y = 0;
-        while (y < wall_top)
+        if (is_collision(next_x_touch, next_y_touch, mlx))//check_wall_collision(mlx, next_y_touch, next_x_touch))
         {
-            my_pixel_put(i, y, mlx->image, CEILING_COLOR);
-            y++;
+            ray->h_wall_hit_x = next_x_touch;
+            ray->h_wall_hit_y = next_y_touch;
+            horizontal_hit_distance = calculate_distance(mlx->map->player->center_x, mlx->map->player->center_y,
+                                                         ray->h_wall_hit_x, ray->h_wall_hit_y);
+            printf("Wall hit at x=%f, y=%f with distance=%f\n", ray->h_wall_hit_x, ray->h_wall_hit_y, horizontal_hit_distance);
+            break;
         }
-
-        // Draw floor
-        y = wall_bottom + 1;
-        while (y < window_HEIGHT)
-        {
-            my_pixel_put(i, y, mlx->image, FLOOR_COLOR);
-            y++;
-        }
-
+        next_x_touch += x_step;
+        next_y_touch += y_step;
         i++;
     }
+
+    if (horizontal_hit_distance == 0)
+        return 1e30; // Large value for "no hit"
+    return horizontal_hit_distance;
+}
+
+float vertical_inter(t_mlxing *mlx, t_ray *ray)
+{
+    float x_step, y_step, x_intercept, y_intercept;
+    float next_x_touch, next_y_touch, vertical_hit_distance = 0;
+
+    // Initialize vertical intersection checks
+    x_step = CELL_SIZE;
+    y_step = tan(ray->ray_angle) * CELL_SIZE;
+
+    // Adjust step direction
+    if (ray->is_left)
+        x_step *= -1;
+    if (ray->is_up && y_step > 0)
+        y_step *= -1;
+    if (ray->is_down && y_step < 0)
+        y_step *= -1;
+
+    // Calculate the first vertical intercept
+    x_intercept = floor(mlx->map->player->center_x / CELL_SIZE) * CELL_SIZE;
+    if (ray->is_right)
+        x_intercept += CELL_SIZE;
+    else if (ray->is_left)
+        x_intercept -= 0.0001; // Avoid skipping current cell
+
+    y_intercept = mlx->map->player->center_y + (x_intercept - mlx->map->player->center_x) * tan(ray->ray_angle);
+
+    next_x_touch = x_intercept;
+    next_y_touch = y_intercept;
+
+    // Initialize hit coordinates
+    ray->v_wall_hit_x = 0;
+    ray->v_wall_hit_y = 0;
+
+    // Increment through the grid to find intersections
+    int i = 0, max_iterations = 1000;
+    while (next_x_touch >= 0 && next_x_touch <= mlx->map->map_width * CELL_SIZE &&
+           next_y_touch >= 0 && next_y_touch <= mlx->map->map_height * CELL_SIZE &&
+           i < max_iterations)
+    {
+        if (is_collision(next_x_touch, next_y_touch, mlx))//check_wall_collision(mlx, next_y_touch, next_x_touch))
+        {
+            ray->v_wall_hit_x = next_x_touch;
+            ray->v_wall_hit_y = next_y_touch;
+            vertical_hit_distance = calculate_distance(mlx->map->player->center_x, mlx->map->player->center_y,
+                                                       ray->v_wall_hit_x, ray->v_wall_hit_y);
+            printf("Vertical wall hit at x=%f, y=%f with distance=%f\n", ray->v_wall_hit_x, ray->v_wall_hit_y, vertical_hit_distance);
+            break;
+        }
+        next_x_touch += x_step;
+        next_y_touch += y_step;
+        i++;
+    }
+
+    if (vertical_hit_distance == 0)
+        return 1e30; // Large value for "no hit"
+    return vertical_hit_distance;
 }
 
 
+void cast_ray(t_mlxing *mlx, t_ray *ray)
+{
+    double horizontal_grid_distance = horizontal_inter(mlx, ray);
+    double vertical_grid_distance = vertical_inter(mlx, ray);
 
-//void render_3d_view(t_mlxing *mlx, double ray_distances[NUM_RAYS])
-//{
-//    double start_angle = mlx->map->player->angle - (FOV / 2);
-//    double ray_step = FOV / NUM_RAYS;
+    // Determine the closest wall hit
+    if (horizontal_grid_distance < vertical_grid_distance)
+    {
+        ray->wall_hit_x = ray->h_wall_hit_x;
+        ray->wall_hit_y = ray->h_wall_hit_y;
+        ray->ray_distance = horizontal_grid_distance;
+        ray->hit_horizontal = 1;
+    }
+    else
+    {
+        ray->wall_hit_x = ray->v_wall_hit_x;
+        ray->wall_hit_y = ray->v_wall_hit_y;
+        ray->ray_distance = vertical_grid_distance;
+        ray->hit_vertical = 1;
+    }
 
-//    for (int i = 0; i < NUM_RAYS; i++)
-//    {
-//        double ray_angle = start_angle + i * ray_step;
-//        t_ray ray = cast_ray(mlx, ray_angle);
-//        ray_distances[i] = ray.distance;
+    // Perspective correction
+    ray->ray_distance *= cos(ray->ray_angle - mlx->map->player->angle);
+	if (ray->ray_distance > MAX_RENDER_DISTANCE)
+        ray->ray_distance = MAX_RENDER_DISTANCE;
+    // Calculate wall stripe height
+    ray->wall_stripe_height = (CELL_SIZE / ray->ray_distance) * mlx->ppd;
+}
 
-//        // Calculate wall height and positions
-//        int wall_height = (int)(window_HEIGHT / ray.distance);
-//        int wall_top = (window_HEIGHT / 2) - (wall_height / 2);
-//        int wall_bottom = (window_HEIGHT / 2) + (wall_height / 2);
+void	init_ray(t_ray *ray)
+{
+	ray->is_down = ray->ray_angle > 0 && ray->ray_angle < M_PI;
+	ray->is_up = !ray->is_down;
+	ray->is_right = ray->ray_angle < (M_PI / 2) || ray->ray_angle > M_PI * 1.5;
+	ray->is_left = !ray->is_right;
+	ray->hit_horizontal = 0;
+	ray->hit_vertical = 0;
+	ray->h_wall_hit_x = 0;
+	ray->h_wall_hit_y = 0;
+	ray->v_wall_hit_x = 0;
+	ray->v_wall_hit_y = 0;
+	ray->wall_hit_x = 0;
+	ray->wall_hit_y = 0;
+	ray->ray_distance = 0;
+	ray->wall_stripe_height = 0;
+}
 
-//        if (wall_top < 0)
-//            wall_top = 0;
-//        if (wall_bottom >= window_HEIGHT)
-//            wall_bottom = window_HEIGHT - 1;
+void	cast_all_rays(t_mlxing *mlx)
+{
+	t_ray *ray;
+	double	ray_angle;
+	int		i;
 
-//        // Adjust color for shading based on angle difference
-//        double angle_difference = fabs(ray_angle - mlx->map->player->angle);
-//        double brightness = cos(angle_difference);
-//        if (brightness < 0.3)
-//            brightness = 0.3;
+	i = 0;
+	ray_angle = mlx->map->player->angle - (FOV / 2);
+	while(i < NUM_RAYS)
+	{
+		ray = &mlx->rays[i];
+		ray->ray_angle = normalize_angle(ray_angle);
+		init_ray(ray);
+		cast_ray(mlx, ray);
+		ray_angle += FOV / NUM_RAYS;
+		i++;
+	}
+}
 
-//        int wall_color = (int)(WALL_COLOR * brightness);
-
-//        // Highlight corners with a distinct color
-//        if (ray.is_corner)
-//        {
-//            wall_color = 0xAAAAAA; // Light gray for corners
-//        }
-
-//        // Draw the wall
-//        draw_vertical_line(mlx->image, i, wall_top, wall_bottom, wall_color);
-
-//        // Draw ceiling
-//        int y = 0;
-//        while (y < wall_top)
-//        {
-//            my_pixel_put(i, y, mlx->image, CEILING_COLOR);
-//            y++;
-//        }
-
-//        // Draw floor
-//        y = wall_bottom + 1;
-//        while (y < window_HEIGHT)
-//        {
-//            my_pixel_put(i, y, mlx->image, FLOOR_COLOR);
-//            y++;
-//        }
-//    }
-//}
-
-
-
-
-//void render_3d_view(t_mlxing *mlx, double ray_distances[NUM_RAYS])
-//{
-
-//	for (int i = 0; i < NUM_RAYS; i++)
-//	{
-//	    double ray_distance = ray_distances[i];
-	
-//	    // Smooth distance to reduce abrupt changes
-//	    double adjusted_distance = ray_distance + 0.01;
-	
-//	    // Calculate smoothed wall height
-//	    int wall_height = (int)((window_HEIGHT / adjusted_distance) * 1.5);
-//	    int wall_top = (window_HEIGHT / 2) - (wall_height / 2);
-//	    int wall_bottom = (window_HEIGHT / 2) + (wall_height / 2);
-	
-//	    if (wall_top < 0) wall_top = 0;
-//	    if (wall_bottom >= window_HEIGHT) wall_bottom = window_HEIGHT - 1;
-	
-//	    draw_vertical_line(mlx->image, i, wall_top, wall_bottom, WALL_COLOR);
-	
-//	    // Ceiling and floor remain the same
-//	    for (int y = 0; y < wall_top; y++)
-//	        my_pixel_put(i, y, mlx->image, CEILING_COLOR);
-	
-//	    for (int y = wall_bottom; y < window_HEIGHT; y++)
-//	        my_pixel_put(i, y, mlx->image, FLOOR_COLOR);
-//	}
-//}
+void draw_vertical_line(t_mlxing *mlx, int x, int wall_top, int wall_bottom, int color)
+{
+	while (wall_top <= wall_bottom)
+	{
+		my_pixel_put(x, wall_top, mlx->image, color);
+		wall_top++;
+	}
+}
 
 
+void	render_3d_view(t_mlxing *mlx)
+{
+	t_ray	*ray;
+	double	wall_strip_height;
+	int		wall_top;
+	int		wall_bottom;
+	double	ray_distance;
+	int		i;
 
-//void render_3d_view(t_mlxing *mlx, double ray_distances[NUM_RAYS])
-//{
-//    int i = 0;
-//    mlx->ppd = (window_WIDTH / 2) / tan(FOV / 2);
-//	while (i < NUM_RAYS)
-//    {
-//        //double ray_angle = normalize_angle(mlx->map->player->angle - (FOV / 2.0) + (i * (FOV / NUM_RAYS)));
-//		double ray_angle = mlx->map->player->angle - (FOV / 2) + (i * (FOV / NUM_RAYS));
-//        // Get the ray distance from the array passed from draw_rays
-//        double ray_distance = ray_distances[i];
+	i = 0;
 
-//        // Calculate perpendicular distance to avoid fish-eye distortion
-//        double perp_distance = ray_distance * cos(ray_angle - mlx->map->player->angle);
+	while(i < NUM_RAYS)
+	{
+		ray = &mlx->rays[i];
+		ray_distance = ray->ray_distance;
+		wall_strip_height = (CELL_SIZE / ray_distance) * mlx->ppd;
+		wall_bottom = (window_HEIGHT / 2) + (wall_strip_height / 2);
+		wall_top = (window_HEIGHT / 2) - (wall_strip_height / 2);
+		int wall_color;
+	if (ray->hit_vertical)
+    	wall_color = (ray->is_right) ? WALL_COLOR_EAST : WALL_COLOR_WEST;
+	else
+    	wall_color = (ray->is_up) ? WALL_COLOR_NORTH : WALL_COLOR_SOUTH;
+		draw_vertical_line(mlx, i, 0, wall_top, CEILING_COLOR);
+        // Draw wall
+        draw_vertical_line(mlx, i, wall_top, wall_bottom, wall_color);
+        // Draw floor
+        draw_vertical_line(mlx, i, wall_bottom, window_HEIGHT - 1, FLOOR_COLOR);
+		i++;
+	}
 
-//        // Calculate the wall height on the projection plane
-//        int wall_height = (int)((mlx->map->cell_height / perp_distance) * mlx->ppd);
-//		//int wall_height = (int)(window_HEIGHT / ray_distances[i] * mlx->ppd);
-//		//printf("ppd----------->%d\n", mlx->ppd);
-//		//printf("cell------------->%d\n", mlx->map->cell_height);
-//		//printf("angle------------->%f\n", ray_angle);
-//		//printf("ray_distances------------->%f\n", ray_distances[i]);
-//		if (wall_height > window_HEIGHT)
-//   			wall_height = window_HEIGHT;
-//        // Determine the start and end points of the vertical line to draw
-//        int wall_start = (window_HEIGHT / 2) - (wall_height / 2);
-//        int wall_end = (window_HEIGHT / 2) + (wall_height / 2);
-
-//		if (wall_start < 0)
-//   			wall_start = 0;
-//		if (wall_end >= window_HEIGHT)
-//    		wall_end = window_HEIGHT - 1;
-//         //Draw the vertical slice of the wall
-//		 int x = (i * window_WIDTH) / NUM_RAYS;
-//		printf("x position----------->%d\n", x);
-//       //draw_vertical_line(mlx->image, x, wall_start, wall_end, BLUE);
-        
-//        i++;
-//    }
-//}
-
-
+}
 
 void	draw_3d_scene(t_mlxing *mlx)
 {
-	clear_image(mlx->image, YELLOW);
-	double ray_distances[NUM_RAYS];
-    double start_angle = mlx->map->player->angle - (FOV / 2);
-    double ray_step = FOV / NUM_RAYS;
-
-    for (int i = 0; i < NUM_RAYS; i++)
-    {
-        double ray_angle = start_angle + i * ray_step;
-        t_ray ray = cast_ray(mlx, ray_angle);
-        ray_distances[i] = ray.distance;
-    }
-	render_3d_view(mlx, ray_distances);
+	mlx->ppd = (window_WIDTH / 2) / tan(FOV / 2);
+	clear_image(mlx->image, BLACK);
+	cast_all_rays(mlx);
+	render_3d_view(mlx);
+	draw_minimap(mlx);
 }
 
 void draw_3d_grid(t_mlxing *mlx)
