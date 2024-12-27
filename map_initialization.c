@@ -61,29 +61,14 @@ static int	parse_cub_file(char *filename, t_map *map)
 	{
 		if (line[0] == '1')
 			parse_map(line, map, i);
-		//if (line[0] == 'R')
-		//	parse_resolution(line, map);
-		//else if (line[0] == 'F')
-		//	parse_floor_color(line, map);
-		//else if (line[0] == 'C')
-		//	parse_ceiling_color(line, map);
-		//else if (line[0] == 'N' && line[1] == 'O')
-		//	parse_north_texture(line, map);
-		//else if (line[0] == 'S' && line[1] == 'O')
-		//	parse_south_texture(line, map);
-		//else if (line[0] == 'W' && line[1] == 'E')
-		//	parse_west_texture(line, map);
-		//else if (line[0] == 'E' && line[1] == 'A')
-		//	parse_east_texture(line, map);
-		//else if (line[0] == 'S')
-		//	parse_sprite_texture(line, map);
+	
 		free(line);
 		line = NULL;
 		line  = get_next_line(file);
 		i++;
 	}
-	if (line)
-		free(line);
+	//if (line)
+	//	free(line);
 	return (file);
 }
 

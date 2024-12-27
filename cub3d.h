@@ -23,6 +23,14 @@
 
 // map difs		//
 
+
+#define WALL_COLOR_NORTH 0x808080
+#define WALL_COLOR_SOUTH 0x606060
+#define WALL_COLOR_EAST  0x404040
+#define WALL_COLOR_WEST  0x202020
+
+
+
 # define BLACK	0x000000	// RGB(0, 0, 0)
 # define WHITE	0xFFFFFF	// RGB(255, 255, 255)
 # define RED		0xFF0000	// RGB(255, 0, 0)					
@@ -40,19 +48,26 @@
 # define ELECTRIC_BLUE 0x0066FF
 # define GREY			0xBDC3C7
 # define UERR "Error\nUsage: ./cub3d maps/*.cub\n"
-# define CELL_SIZE  50
+# define CELL_SIZE  60
 # define NUM_RAYS 800
 # define M_PI		3.14159265358979323846
-# define FOV  (M_PI / 3)
+# define FOV (60 * M_PI / 180)
 # define MAX_STEPS  100
 # define WALL_COLOR HOT_PINK
-#define STEP_SIZE 1.0  // Incremental step size for ray tracing
+#define STEP_SIZE 5.0  // Incremental step size for ray tracing
 #define COLLISION_SAMPLES 5  // Number of samples for collision detection
 #define PLAYER_RADIUS 5.0
 # define MAX_DISTANCE 1000
 
 #define CEILING_COLOR CYAN
 #define FLOOR_COLOR GREY
+#define MAX_RENDER_DISTANCE 8000.0
+#define MINIMAP_SCALE 0.3  // Scale factor for minimap size
+#define MINIMAP_COLOR_WALL 0x808080  // Gray for walls
+#define MINIMAP_COLOR_EMPTY 0xFFFFFF  // White for empty spaces
+#define MINIMAP_COLOR_PLAYER 0xFF0000  // Red for player
+#define MINIMAP_COLOR_RAY 0xFFFF00  // Yellow for rays
+
 
 //      player      //
 
@@ -71,14 +86,27 @@ typedef struct s_player
 
 typedef struct s_ray
 {
-	double hit_x;		// X-coordinate of the wall hit
-	double hit_y;		// Y-coordinate of the wall hit
-	int is_vertical;
+	double h_wall_hit_x;
+	double h_wall_hit_y;		// X-coordinate of the wall hit
+	double v_wall_hit_y;	// Y-coordinate of the wall hit
+	double v_wall_hit_x;
 	int hit_vertical;
-	float distance;
-	int	hit_wall;
+	int	hit_horizontal;
+	int	is_down;
+	int	is_up;
+	int	is_right;
+	int	is_left;
 	int	is_corner;
-		// wheter the line is vertical or horizontal 
+	double ray_angle;        // Angle of the ray
+    double ray_distance;     // Distance to the wall hit
+    int wall_hit_x;      // X-coordinate of the wall hit
+    int wall_hit_y;      // Y-coordinate of the wall hit
+	double	start_x;
+	double	start_y;
+	int	hit;
+	double	step_x;
+	double	step_y;
+	float	wall_stripe_height;
 }	t_ray;
 
 //	image	//
@@ -121,9 +149,10 @@ typedef struct s_mlxing
 {
 	void		*mlx_connect;
 	void		*mlx_window;
-	int			ppd; // prjection plane distance
+	float		ppd; // prjection plane distance
 	t_map		*map;
 	t_image		*image;
+	t_ray 		*rays;
 
 }	t_mlxing;
 
@@ -154,10 +183,11 @@ void	redraw_player(t_mlxing *mlx);
 
 
 		//-------------3D rendering functions ------------//
-
+int		is_collision(double new_x, double new_y, t_mlxing *mlx);
 void	draw_3d_grid(t_mlxing *mlx);
-void	render_3d_view(t_mlxing *mlx, double ray_distances[NUM_RAYS]);
-t_ray	cast_ray(t_mlxing *mlx, double ray_angle);
+void	render_3d_view(t_mlxing *mlx);
+void	cast_ray(t_mlxing *mlx, t_ray *ray);
+void	cast_rays(t_mlxing *mlx);
 void	redraw_3d_grid(t_mlxing *mlx);
 
 #endif
