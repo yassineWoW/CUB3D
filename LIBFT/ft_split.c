@@ -6,7 +6,7 @@
 /*   By: yimizare <yimizare@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/14 18:00:55 by yimizare          #+#    #+#             */
-/*   Updated: 2023/11/30 17:14:10 by yimizare         ###   ########.fr       */
+/*   Updated: 2025/02/18 19:23:02 by yimizare         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,7 +60,7 @@ static	char	**allowords(char **split, char const *s, int wordcount, char c)
 			i++;
 		j = i;
 		if (s[i] != '\0' && s[i] != c)
-		{	
+		{
 			while (s[i] != c && s[i] != '\0')
 				i++;
 			split[k] = ft_substr(s, j, i - j);

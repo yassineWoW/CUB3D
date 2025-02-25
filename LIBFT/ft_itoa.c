@@ -6,7 +6,7 @@
 /*   By: yimizare <yimizare@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/18 20:43:38 by yimizare          #+#    #+#             */
-/*   Updated: 2023/11/26 18:51:07 by yimizare         ###   ########.fr       */
+/*   Updated: 2025/02/18 19:22:52 by yimizare         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@ static int	countlength(long a)
 	{
 		a *= -1;
 		count = 1;
-	}	
+	}
 	while (a >= 10)
 	{
 		count++;
@@ -31,7 +31,7 @@ static int	countlength(long a)
 }
 
 static char	*writeints(long a, int length, char *string)
-{	
+{
 	int	i;
 	int	number;
 

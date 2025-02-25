@@ -28,17 +28,19 @@ ${NAME}	:	${OBJS}
 bonus:	${OBJSB}
 
 ${OBJSB} : $(SRCSB)
-		$(CC) $(CFLAGS) -c $(SRCSB)
-		${LIBC}	${NAME} ${OBJSB}
+		@$(CC) $(CFLAGS) -c $(SRCSB)
+		@${LIBC}	${NAME} ${OBJSB}
 clean:
-		${RM} ${OBJS} ${OBJSB}
+		@${RM} ${OBJS} ${OBJSB}
 
 fclean:	clean
-		${RM}	${NAME}
+		@${RM}	${NAME}
 
 re:	fclean	all
 
 git:
 	git add . ;git commit -m " f"; git push 
+
+.SECONDARY: $(OFILES)
 
 .PHONY:	all	bonus	re	clean	fclean

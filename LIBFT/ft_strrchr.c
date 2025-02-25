@@ -6,7 +6,7 @@
 /*   By: yimizare <yimizare@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/01 20:35:12 by yimizare          #+#    #+#             */
-/*   Updated: 2023/11/07 21:40:33 by yimizare         ###   ########.fr       */
+/*   Updated: 2025/02/18 19:23:19 by yimizare         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@ char	*ft_strrchr(const char *s, int c)
 
 	i = 0;
 	while (s[i] != '\0')
-	i++;
+		i++;
 	while (i >= 0)
 	{
 		if (s[i] == (char)c)
