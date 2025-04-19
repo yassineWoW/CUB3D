@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   mlx_events2.c                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ainouni <ainouni@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/14 21:37:17 by ainouni           #+#    #+#             */
+/*   Updated: 2025/03/14 21:37:18 by ainouni          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "cub3d.h"
 
 int	handle_rotation(t_mlxing *mlx, double rotate_speed)
@@ -19,8 +31,8 @@ int	handle_rotation(t_mlxing *mlx, double rotate_speed)
 	return (mlx->moved);
 }
 
-void	handle_movement(t_mlxing *mlx, double move_speed,
-	double *dx, double *dy)
+void	handle_movement(t_mlxing *mlx, double move_speed, double *dx,
+		double *dy)
 {
 	if (mlx->keys->w_pressed)
 	{
@@ -57,7 +69,7 @@ void	normalize_movement(double *dx, double *dy, double move_speed)
 }
 
 void	handle_player_movement(t_mlxing *mlx, double new_center_x,
-	double new_center_y)
+		double new_center_y)
 {
 	if (mlx->moved)
 	{

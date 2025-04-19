@@ -1,62 +1,36 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   animation_bonus.c                                  :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ainouni <ainouni@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/15 03:17:18 by ainouni           #+#    #+#             */
+/*   Updated: 2025/04/17 22:44:17 by ainouni          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "cub3d_bonus.h"
 
-void	load_initial_image(t_mlxing *mlx)
+void	free_existing_frames(t_mlxing *mlx, t_animation *anim)
 {
-	mlx->initial_img->img = mlx_xpm_file_to_image(mlx->mlx_connect,
-			"sprites/gun_sprite_0/0.xpm",
-			&mlx->initial_img->width, &mlx->initial_img->height);
-	if (!mlx->initial_img->img)
-	{
-		fprintf(stderr, "Error: Failed to load initial image\n");
-		return ;
-	}
-	mlx->initial_img->addr = mlx_get_data_addr(mlx->initial_img->img,
-			&mlx->initial_img->bpp, &mlx->initial_img->line_length,
-			&mlx->initial_img->endian);
-}
+	int	i;
 
-void	render_initial_image(t_mlxing *mlx, int x, int y)
-{
-	t_image	*initial_image;
-
-	int (sy), (sx), (pixel_color), (dx), (dy);
-	sx = -1;
-	sy = -1;
-	initial_image = mlx->initial_img;
-	while (++sy < initial_image->height)
+	i = 0;
+	if (anim->frames)
 	{
-		sx = -1;
-		while (++sx < initial_image->width)
+		while (i < anim->frame_count)
 		{
-			pixel_color = ((int *)initial_image->addr)[sy
-				* initial_image->width + sx];
-			if ((pixel_color & 0xFF000000) == 0xFF000000)
-			{
-				sx++;
-				continue ;
-			}
-			dx = x + sx;
-			dy = y + sy;
-			if (dx >= 0 && dx < WINDOW_WIDTH && dy >= 0 && dy < WINDOW_HEIGHT)
-				((int *)mlx->image->addr)[dy * WINDOW_WIDTH + dx] = pixel_color;
+			if (anim->frames[i].img)
+				mlx_destroy_image(mlx->mlx_connect, anim->frames[i].img);
+			i++;
 		}
+		free(anim->frames);
 	}
 }
 
-int	bound_check(int dx, int dy)
+void	init_anim_data(t_animation *anim, int frame_count)
 {
-	return (dx >= 0 && dx < WINDOW_WIDTH && dy >= 0 && dy < WINDOW_HEIGHT);
-}
-
-void	init_anim(t_animation *anim, int frame_count)
-{
-	anim->frames = malloc(sizeof(t_image) * frame_count);
-	if (!anim->frames)
-	{
-		fprintf(stderr, "Error: Failed to allocate \
-		memory for animation frames\n");
-		return ;
-	}
 	anim->frame_count = frame_count;
 	anim->current_frame = 0;
 	anim->is_playing = 0;
@@ -65,14 +39,46 @@ void	init_anim(t_animation *anim, int frame_count)
 	anim->elapsed_time = 0.0;
 }
 
-void	load_animation(t_mlxing *mlx, t_animation *anim,
-		const char *folder, int frame_count)
+void	free_mlx(t_mlxing *mlx)
+{
+	if (mlx->mlx_window)
+	{
+		mlx_destroy_window(mlx->mlx_connect, mlx->mlx_window);
+		mlx->mlx_window = NULL;
+	}
+	if (mlx->mlx_connect)
+	{
+		mlx_destroy_display(mlx->mlx_connect);
+		free(mlx->mlx_connect);
+		mlx->mlx_connect = NULL;
+	}
+	free(mlx->map->doors);
+	free_parsing1(mlx, 0);
+	ft_malloc(0, 1);
+	exit(1);
+}
+
+void	allocate_anim(int frame_count, t_animation *anim)
+{
+	anim->frames = malloc(sizeof(t_image) * frame_count);
+	if (!anim->frames)
+	{
+		fprintf(stderr, "Error: Failed to allocate \
+		memory for animation frames\n");
+		return ;
+	}
+}
+
+void	load_animation(t_mlxing *mlx, t_animation *anim, const char *folder,
+		int frame_count)
 {
 	char	path[256];
 
 	int (i), (j);
 	i = -1;
-	init_anim(anim, frame_count);
+	free_existing_frames(mlx, anim);
+	allocate_anim(frame_count, anim);
+	init_anim_data(anim, frame_count);
 	while (++i < frame_count)
 	{
 		j = -1;
@@ -84,9 +90,8 @@ void	load_animation(t_mlxing *mlx, t_animation *anim,
 			fprintf(stderr, "Error: Failed to load animation frame %s\n", path);
 			while (++j < i)
 				mlx_destroy_image(mlx->mlx_connect, anim->frames[j].img);
-			free(anim->frames);
-			anim->frames = NULL;
-			return ;
+			free_textures_from_anim(mlx, anim);
+			free_mlx(mlx);
 		}
 		anim->frames[i].addr = mlx_get_data_addr(anim->frames[i].img,
 				&anim->frames[i].bpp, &anim->frames[i].line_length,

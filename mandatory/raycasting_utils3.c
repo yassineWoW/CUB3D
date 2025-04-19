@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   raycasting_utils3.c                                :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ainouni <ainouni@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/14 21:37:56 by ainouni           #+#    #+#             */
+/*   Updated: 2025/03/14 21:37:57 by ainouni          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "cub3d.h"
 
 void	cast_ray(t_mlxing *mlx, t_ray *ray)
@@ -21,7 +33,6 @@ void	cast_ray(t_mlxing *mlx, t_ray *ray)
 		ray->ray_distance = vertical_grid_distance;
 		ray->hit_vertical = 1;
 	}
-	ray->ray_distance *= cos(ray->ray_angle - mlx->map->player->angle);
 	if (ray->ray_distance > MAX_RENDER_DISTANCE)
 		ray->ray_distance = MAX_RENDER_DISTANCE;
 	ray->wall_stripe_height = (CELL_SIZE / ray->ray_distance) * mlx->ppd;
@@ -53,13 +64,13 @@ void	cast_all_rays(t_mlxing *mlx)
 
 	i = 0;
 	ray_angle = mlx->map->player->angle - (FOV / 2);
-	while (i < NUM_RAYS)
+	while (i < WINDOW_WIDTH)
 	{
 		ray = &mlx->rays[i];
 		ray->ray_angle = normalize_angle(ray_angle);
 		init_ray(ray);
 		cast_ray(mlx, ray);
-		ray_angle += FOV / NUM_RAYS;
+		ray_angle += FOV / WINDOW_WIDTH;
 		i++;
 	}
 }

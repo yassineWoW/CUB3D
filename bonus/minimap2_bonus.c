@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   minimap2_bonus.c                                   :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ainouni <ainouni@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/15 03:18:10 by ainouni           #+#    #+#             */
+/*   Updated: 2025/04/17 22:46:02 by ainouni          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "cub3d_bonus.h"
 
 void	minimap_pixel_put(int x, int y, t_image *image, int color)
@@ -29,8 +41,8 @@ void	calculate_map_offset(t_mlxing *mlx, double *offset_x, double *offset_y)
 	*offset_y = (rel_player_y * MINIMAP_SCALE);
 }
 
-void	draw_minimap_outline(t_image *image, int center_x,
-		int center_y, int color)
+void	draw_minimap_outline(t_image *image, int center_x, int center_y,
+		int color)
 {
 	double	distance;
 
@@ -47,11 +59,10 @@ void	draw_minimap_outline(t_image *image, int center_x,
 			{
 				screen_x = center_x + x;
 				screen_y = center_y + y;
-				if (screen_x >= 0 && screen_x < WINDOW_WIDTH
-					&& screen_y >= 0 && screen_y < WINDOW_HEIGHT)
+				if (screen_x >= 0 && screen_x < WINDOW_WIDTH && screen_y >= 0
+					&& screen_y < WINDOW_HEIGHT)
 				{
-					minimap_pixel_put(screen_x, screen_y, image,
-						color);
+					minimap_pixel_put(screen_x, screen_y, image, color);
 				}
 			}
 		}
@@ -99,11 +110,14 @@ void	draw_tile(t_mlxing *mlx, int map_x, int map_y)
 		{
 			if (mlx->map->grid[map_y][map_x] == '1')
 				color = MINIMAP_COLOR_WALL;
+			else if (mlx->map->grid[map_y][map_x] == 'D')
+				color = RED;
+			else if (mlx->map->grid[map_y][map_x] == 'd')
+				color = GREEN;
 			else
 				color = MINIMAP_COLOR_EMPTY;
-			minimap_pixel_put(CENTER_X + mlx->tile_x + x,
-				CENTER_Y + mlx->tile_y + y,
-				mlx->image, color);
+			minimap_pixel_put(CENTER_X + mlx->tile_x + x, CENTER_Y + mlx->tile_y
+				+ y, mlx->image, color);
 		}
 	}
 }

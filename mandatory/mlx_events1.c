@@ -1,7 +1,19 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   mlx_events1.c                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ainouni <ainouni@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/14 21:37:07 by ainouni           #+#    #+#             */
+/*   Updated: 2025/03/14 21:37:09 by ainouni          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "cub3d.h"
 
 int	update_player_position(t_mlxing *mlx, double move_speed,
-	double *new_center_x, double *new_center_y)
+		double *new_center_x, double *new_center_y)
 {
 	double	dx;
 	double	dy;
@@ -22,7 +34,7 @@ int	update_player_position(t_mlxing *mlx, double move_speed,
 int	key_press(int key, t_mlxing *mlx)
 {
 	if (key == XK_Escape)
-		return (exit_game(mlx));
+		return (exit_game(mlx, 1));
 	if (key == XK_w)
 		mlx->keys->w_pressed = 1;
 	else if (key == XK_s)

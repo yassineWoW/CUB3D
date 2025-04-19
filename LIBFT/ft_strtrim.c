@@ -3,51 +3,48 @@
 /*                                                        :::      ::::::::   */
 /*   ft_strtrim.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yimizare <yimizare@student.42.fr>          +#+  +:+       +#+        */
+/*   By: oel-mouk <oel-mouk@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/14 15:29:57 by yimizare          #+#    #+#             */
-/*   Updated: 2024/11/20 12:16:01 by yimizare         ###   ########.fr       */
+/*   Updated: 2025/02/28 17:28:41 by oel-mouk         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
 
-static int	isset(const char *set, char c)
+static size_t	len_str(const char *s)
 {
-	while (*set != '\0')
-	{
-		if (*set == c)
-			return (1);
-		set++;
-	}
-	return (0);
+	size_t	i;
+
+	i = 0;
+	if (!s)
+		return (0);
+	while (*s && s[i])
+		i++;
+	return (i);
 }
 
-char	*ft_strtrim(char const *s1, char const *set)
+char	*ft_strtrim(char *s1, char const *set)
 {
-	char	*new;
-	int		size;
+	int		start;
+	int		end;
+	char	*trimed_str;
 
 	if (!s1 || !set)
 		return (NULL);
-	while (s1)
-	{
-		if (isset(set, ((char)*s1)))
-			s1++;
-		else
-			break ;
-	}
-	size = ft_strlen(s1);
-	while (size != 0)
-	{
-		if (isset(set, ((char)s1[size - 1])))
-			size--;
-		else
-			break ;
-	}
-	new = (char *)ft_calloc((size + 1), 1);
-	if (!new)
+	start = 0;
+	end = len_str(s1) - 1;
+	while (ft_strchr(set, s1[start]) && start <= end)
+		start++;
+	if (start > end)
+		return (s1);
+	while (ft_strchr(set, s1[end]) && end >= 0)
+		end--;
+	trimed_str = (char *)malloc(end - start + 2);
+	if (!trimed_str)
 		return (NULL);
-	ft_strlcpy(new, (char *)s1, size + 1);
-	return (new);
+	ft_strlcpy(trimed_str, &s1[start], end - start + 2);
+	ft_strlcpy(s1, trimed_str, strlen(s1));
+	free(trimed_str);
+	return (s1);
 }

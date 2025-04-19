@@ -1,7 +1,19 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   init_player.c                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ainouni <ainouni@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/14 21:36:20 by ainouni           #+#    #+#             */
+/*   Updated: 2025/04/17 22:39:44 by ainouni          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "cub3d.h"
 
 void	calculate_move_direction(t_mlxing *mlx, double *move_direction_x,
-			double *move_direction_y)
+		double *move_direction_y)
 {
 	double	move_distance;
 
@@ -16,10 +28,10 @@ void	calculate_move_direction(t_mlxing *mlx, double *move_direction_x,
 	}
 }
 
-int	check_collision_at_angle( double angle, t_mlxing *mlx)
+int	check_collision_at_angle(double angle, t_mlxing *mlx)
 {
-	double (buffer), (check_x), (check_y),
-		(to_wall_x), (to_wall_y), (dot_product);
+	double (buffer), (check_x), (check_y), (to_wall_x), (to_wall_y),
+		(dot_product);
 	buffer = 0.10;
 	check_x = mlx->new_x + cos(angle) * buffer;
 	check_y = mlx->new_y + sin(angle) * buffer;
@@ -27,8 +39,8 @@ int	check_collision_at_angle( double angle, t_mlxing *mlx)
 	{
 		to_wall_x = check_x - mlx->current_x;
 		to_wall_y = check_y - mlx->current_y;
-		dot_product = to_wall_x * mlx->move_direction_x
-			+ to_wall_y * mlx->move_direction_y;
+		dot_product = to_wall_x * mlx->move_direction_x + to_wall_y
+			* mlx->move_direction_y;
 		if (dot_product < 0)
 			return (0);
 		return (1);
@@ -39,10 +51,8 @@ int	check_collision_at_angle( double angle, t_mlxing *mlx)
 int	check_collision(t_mlxing *mlx)
 {
 	int				i;
-	const double	angles[8] = {
-		0.0, M_PI_4, M_PI_2, 3 * M_PI_4,
-		M_PI, 5 * M_PI_4, 3 * M_PI_2, 7 * M_PI_4
-	};
+	const double	angles[8] = {0.0, M_PI_4, M_PI_2, 3 * M_PI_4, M_PI, 5
+		* M_PI_4, 3 * M_PI_2, 7 * M_PI_4};
 
 	i = -1;
 	while (++i < 8)
@@ -70,7 +80,7 @@ int	try_sliding(t_mlxing *mlx)
 
 int	is_collision(double new_x, double new_y, t_mlxing *mlx)
 {
-	int		collision;
+	int	collision;
 
 	mlx->new_x = new_x;
 	mlx->new_y = new_y;

@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ainouni <ainouni@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/14 21:39:31 by ainouni           #+#    #+#             */
+/*   Updated: 2025/03/14 21:39:32 by ainouni          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include <stdio.h>
 #include "get_next_line.h"
 
@@ -69,11 +81,18 @@ char	*get_next_line(int fd)
 	char		*line;
 
 	if (fd < 0 || BUFFER_SIZE <= 0)
+	{
+		if (buff)
+			free (buff);
 		return (NULL);
+	}
 	buff = getdata(fd, buff);
 	if (!buff)
 		return (NULL);
 	line = prepare_line(buff);
 	buff = save_next_line(buff);
+
+	// if (!buff)
+	// 	free (buff);
 	return (line);
 }

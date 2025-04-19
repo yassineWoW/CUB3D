@@ -1,28 +1,53 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   mlx_events1_bonus.c                                :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: yimizare <yimizare@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/15 03:18:29 by ainouni           #+#    #+#             */
+/*   Updated: 2025/04/18 15:38:06 by yimizare         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "cub3d_bonus.h"
 
-int	update_player_position(t_mlxing *mlx, double move_speed,
-	double *new_center_x, double *new_center_y)
+int	is_wall_or_closed_door(char cell)
 {
-	double	dx;
-	double	dy;
+	return (cell == '1' || cell == 'D');
+}
 
-	dx = 0;
-	dy = 0;
-	handle_movement(mlx, move_speed, &dx, &dy);
-	normalize_movement(&dx, &dy, move_speed);
-	if (dx != 0 || dy != 0)
+double	calculate_distance2(double x1, double y1, double x2, double y2)
+{
+	double	dist_x;
+	double	dist_y;
+
+	dist_x = x2 - x1;
+	dist_y = y2 - y1;
+	return (sqrt(dist_x * dist_x + dist_y * dist_y));
+}
+
+void	adjust_p_p(t_player *player, double wall_x, double wall_y,
+		double buffer_distance)
+{
+	double (dist_x), (dist_y), (dist_to_wall), (push_x), (push_y);
+	dist_x = wall_x - player->center_x;
+	dist_y = wall_y - player->center_y;
+	dist_to_wall = calculate_distance2(player->center_x, player->center_y,
+			wall_x, wall_y);
+	if (dist_to_wall < buffer_distance)
 	{
-		*new_center_x += dx;
-		*new_center_y += dy;
-		mlx->moved = 1;
+		push_x = dist_x / dist_to_wall * (buffer_distance - dist_to_wall);
+		push_y = dist_y / dist_to_wall * (buffer_distance - dist_to_wall);
+		player->center_x -= push_x;
+		player->center_y -= push_y;
 	}
-	return (mlx->moved);
 }
 
 int	key_press(int key, t_mlxing *mlx)
 {
 	if (key == XK_Escape)
-		return (exit_game(mlx));
+		return (exit_game(mlx, 1));
 	if (key == XK_w)
 		mlx->keys->w_pressed = 1;
 	else if (key == XK_s)
@@ -35,8 +60,13 @@ int	key_press(int key, t_mlxing *mlx)
 		mlx->keys->left_pressed = 1;
 	else if (key == XK_Right)
 		mlx->keys->right_pressed = 1;
-	else if (key == XK_space) // Example: Space key for shooting
-        start_shoot_animation(mlx);
+	else if (key == XK_space)
+		start_shoot_animation(mlx);
+	else if (key == XK_e)
+	{
+		mlx->keys->e_pressed = 1;
+		handle_door_interaction(mlx);
+	}
 	return (0);
 }
 
@@ -54,24 +84,7 @@ int	key_release(int key, t_mlxing *mlx)
 		mlx->keys->left_pressed = 0;
 	else if (key == XK_Right)
 		mlx->keys->right_pressed = 0;
-	return (0);
-}
-
-int	handle_mouse_move(int x, int y, t_mlxing *mlx)
-{
-	static int	last_mouse_x = -1;
-	int			delta_x;
-
-	(void)y;
-	if (last_mouse_x == -1)
-		last_mouse_x = x;
-	delta_x = x - last_mouse_x;
-	mlx->map->player->angle += delta_x * MOUSE_SENSITIVITY;
-	if (mlx->map->player->angle < 0)
-		mlx->map->player->angle += 2 * M_PI;
-	if (mlx->map->player->angle > 2 * M_PI)
-		mlx->map->player->angle -= 2 * M_PI;
-	last_mouse_x = x;
-	mlx->needs_redraw = 1;
+	else if (key == XK_e)
+		mlx->keys->e_pressed = 0;
 	return (0);
 }

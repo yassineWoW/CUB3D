@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   raycasting_utils1.c                                :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ainouni <ainouni@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/14 21:37:45 by ainouni           #+#    #+#             */
+/*   Updated: 2025/03/14 21:37:46 by ainouni          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "cub3d.h"
 
 void	calculate_horizontal_step(t_ray *ray, t_mlxing *mlx)
@@ -6,8 +18,8 @@ void	calculate_horizontal_step(t_ray *ray, t_mlxing *mlx)
 	mlx->h_x_step = CELL_SIZE / tan(ray->ray_angle);
 	if (ray->is_up)
 		mlx->h_y_step *= -1;
-	if ((ray->is_left && mlx->h_x_step > 0)
-		|| (ray->is_right && mlx->h_x_step < 0))
+	if ((ray->is_left && mlx->h_x_step > 0) || (ray->is_right
+			&& mlx->h_x_step < 0))
 		mlx->h_x_step *= -1;
 }
 
@@ -19,9 +31,8 @@ void	initialize_horizontal_intercept(t_mlxing *mlx, t_ray *ray)
 		mlx->h_y_intercept += CELL_SIZE;
 	else if (ray->is_up)
 		mlx->h_y_intercept -= 0.0001;
-	mlx->h_x_intercept = mlx->map->player->center_x
-		+ (mlx->h_y_intercept - mlx->map->player->center_y)
-		/ tan(ray->ray_angle);
+	mlx->h_x_intercept = mlx->map->player->center_x + (mlx->h_y_intercept
+			- mlx->map->player->center_y) / tan(ray->ray_angle);
 }
 
 float	find_horizontal_hit(t_mlxing *mlx, t_ray *ray)
@@ -31,10 +42,10 @@ float	find_horizontal_hit(t_mlxing *mlx, t_ray *ray)
 
 	i = 0;
 	horizontal_h_d = 0;
-	while (mlx->h_next_x_touch >= 0 && mlx->h_next_x_touch
-		<= mlx->map->map_width * CELL_SIZE
-		&& mlx->h_next_y_touch >= 0 && mlx->h_next_y_touch
-		<= mlx->map->map_height * CELL_SIZE
+	while (mlx->h_next_x_touch >= 0
+		&& mlx->h_next_x_touch <= mlx->map->map_width * CELL_SIZE
+		&& mlx->h_next_y_touch >= 0
+		&& mlx->h_next_y_touch <= mlx->map->map_height * CELL_SIZE
 		&& i < mlx->h_max_iterations)
 	{
 		if (check_wall_collision(mlx, mlx->h_next_y_touch, mlx->h_next_x_touch))

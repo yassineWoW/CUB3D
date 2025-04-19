@@ -1,65 +1,88 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   raycasting_utils3_bonus.c                          :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ainouni <ainouni@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/15 03:18:58 by ainouni           #+#    #+#             */
+/*   Updated: 2025/03/15 03:18:59 by ainouni          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "cub3d_bonus.h"
 
-void	cast_ray(t_mlxing *mlx, t_ray *ray)
+t_door	*find_door_at(t_map *map, int map_x, int map_y)
 {
-	double	horizontal_grid_distance;
-	double	vertical_grid_distance;
+	int	i;
 
-	horizontal_grid_distance = horizontal_inter(mlx, ray);
-	vertical_grid_distance = vertical_inter(mlx, ray);
-	if (horizontal_grid_distance < vertical_grid_distance)
+	i = 0;
+	while (i < map->door_count)
+	{
+		if (map->doors[i].x == map_x && map->doors[i].y == map_y)
+			return (&map->doors[i]);
+		i++;
+	}
+	return (NULL);
+}
+
+void	calculate_hit_distances(t_mlxing *mlx, t_ray *ray,
+		double *horizontal_dist, double *vertical_dist)
+{
+	*horizontal_dist = horizontal_inter(mlx, ray);
+	*vertical_dist = vertical_inter(mlx, ray);
+	if (*horizontal_dist < *vertical_dist)
 	{
 		ray->wall_hit_x = ray->h_wall_hit_x;
 		ray->wall_hit_y = ray->h_wall_hit_y;
-		ray->ray_distance = horizontal_grid_distance;
-		ray->hit_horizontal = 1;
+		ray->ray_distance = *horizontal_dist;
+		ray->hit_vertical = 0;
 	}
 	else
 	{
 		ray->wall_hit_x = ray->v_wall_hit_x;
 		ray->wall_hit_y = ray->v_wall_hit_y;
-		ray->ray_distance = vertical_grid_distance;
+		ray->ray_distance = *vertical_dist;
 		ray->hit_vertical = 1;
 	}
-	ray->ray_distance *= cos(ray->ray_angle - mlx->map->player->angle);
-	if (ray->ray_distance > MAX_RENDER_DISTANCE)
-		ray->ray_distance = MAX_RENDER_DISTANCE;
-	ray->wall_stripe_height = (CELL_SIZE / ray->ray_distance) * mlx->ppd;
 }
 
-void	init_ray(t_ray *ray)
+void	handle_door_hit(t_ray *ray)
 {
-	ray->is_down = ray->ray_angle > 0 && ray->ray_angle < M_PI;
-	ray->is_up = !ray->is_down;
-	ray->is_right = ray->ray_angle < (M_PI / 2) || ray->ray_angle > M_PI * 1.5;
-	ray->is_left = !ray->is_right;
-	ray->hit_horizontal = 0;
-	ray->hit_vertical = 0;
-	ray->h_wall_hit_x = 0;
-	ray->h_wall_hit_y = 0;
-	ray->v_wall_hit_x = 0;
-	ray->v_wall_hit_y = 0;
-	ray->wall_hit_x = 0;
-	ray->wall_hit_y = 0;
-	ray->ray_distance = 0;
-	ray->wall_stripe_height = 0;
+	double	ray_dir_x;
+	double	ray_dir_y;
+	double	step;
+
+	ray_dir_x = cos(ray->ray_angle);
+	ray_dir_y = sin(ray->ray_angle);
+	step = 1.0;
+	ray->h_wall_hit_x += ray_dir_x * step;
+	ray->h_wall_hit_y += ray_dir_y * step;
+	ray->v_wall_hit_x += ray_dir_x * step;
+	ray->v_wall_hit_y += ray_dir_y * step;
 }
 
-void	cast_all_rays(t_mlxing *mlx)
+int	check_hit_type(t_mlxing *mlx, t_ray *ray, int map_x, int map_y)
 {
-	t_ray	*ray;
-	double	ray_angle;
-	int		i;
-
-	i = 0;
-	ray_angle = mlx->map->player->angle - (FOV / 2);
-	while (i < NUM_RAYS)
+	if (map_x < 0 || map_y < 0 || map_y >= mlx->map->map_height
+		|| map_x >= mlx->map->map_width)
+		return (1);
+	if (mlx->map->grid[map_y][map_x] == 'D')
 	{
-		ray = &mlx->rays[i];
-		ray->ray_angle = normalize_angle(ray_angle);
-		init_ray(ray);
-		cast_ray(mlx, ray);
-		ray_angle += FOV / NUM_RAYS;
-		i++;
+		ray->is_door = 1;
+		return (1);
+	}
+	else if (mlx->map->grid[map_y][map_x] == '1')
+	{
+		return (1);
+	}
+	else if (mlx->map->grid[map_y][map_x] == 'd')
+	{
+		handle_door_hit(ray);
+		return (0);
+	}
+	else
+	{
+		return (1);
 	}
 }

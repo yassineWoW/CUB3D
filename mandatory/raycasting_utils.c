@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   raycasting_utils.c                                 :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ainouni <ainouni@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/14 21:37:38 by ainouni           #+#    #+#             */
+/*   Updated: 2025/03/14 21:37:39 by ainouni          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "cub3d.h"
 
 void	my_pixel_put(int x, int y, t_image *image, int color)
@@ -37,7 +49,7 @@ double	calculate_distance(double x1, double y1, double x2, double y2)
 }
 
 int	check_wall_collision(t_mlxing *mlx, double next_y_touch,
-						double next_x_touch)
+		double next_x_touch)
 {
 	int	app_map_x;
 	int	app_map_y;

@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   raycasting_utils2_bonus.c                          :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ainouni <ainouni@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/15 03:19:00 by ainouni           #+#    #+#             */
+/*   Updated: 2025/03/15 03:19:01 by ainouni          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "cub3d_bonus.h"
 
 void	initialize_vertical_intercept(t_mlxing *mlx, t_ray *ray)
@@ -7,10 +19,9 @@ void	initialize_vertical_intercept(t_mlxing *mlx, t_ray *ray)
 	if (ray->is_right)
 		mlx->v_x_intercept += CELL_SIZE;
 	else if (ray->is_left)
-		mlx->v_x_intercept -= 0.0001;
-	mlx->v_y_intercept = mlx->map->player->center_y
-		+ (mlx->v_x_intercept - mlx->map->player->center_x)
-		* tan(ray->ray_angle);
+		mlx->v_x_intercept -= 0.001;
+	mlx->v_y_intercept = mlx->map->player->center_y + (mlx->v_x_intercept
+			- mlx->map->player->center_x) * tan(ray->ray_angle);
 }
 
 void	calculate_vertical_step(t_ray *ray, t_mlxing *mlx)
@@ -32,10 +43,10 @@ float	find_vertical_hit(t_mlxing *mlx, t_ray *ray)
 
 	i = 0;
 	vertical_h_d = 0;
-	while (mlx->v_next_x_touch >= 0 && mlx->v_next_x_touch
-		<= mlx->map->map_width * CELL_SIZE
-		&& mlx->v_next_y_touch >= 0 && mlx->v_next_y_touch
-		<= mlx->map->map_height * CELL_SIZE
+	while (mlx->v_next_x_touch >= 0
+		&& mlx->v_next_x_touch <= mlx->map->map_width * CELL_SIZE
+		&& mlx->v_next_y_touch >= 0
+		&& mlx->v_next_y_touch <= mlx->map->map_height * CELL_SIZE
 		&& i < mlx->v_max_iterations)
 	{
 		if (check_wall_collision(mlx, mlx->v_next_y_touch, mlx->v_next_x_touch))

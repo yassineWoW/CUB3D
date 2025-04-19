@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   cub3d_bonus.c                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ainouni <ainouni@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/15 03:17:30 by ainouni           #+#    #+#             */
+/*   Updated: 2025/03/15 03:17:31 by ainouni          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "cub3d_bonus.h"
 
 void	init_player_map(t_mlxing *mlx, char *file)
@@ -10,24 +22,14 @@ t_mlxing	*init_mlx_structure(void)
 {
 	t_mlxing	*mlx;
 
-	mlx = (t_mlxing *)malloc(sizeof(t_mlxing));
-	if (!mlx)
-		return (NULL);
+	mlx = NULL;
+	mlx = ft_malloc(sizeof(t_mlxing), 0);
+	mlx->map = ft_malloc(sizeof(t_map), 0);
+	mlx->image = ft_malloc(sizeof(t_image), 0);
+	mlx->map->player = ft_malloc(sizeof(t_player), 0);
+	mlx->keys = ft_malloc(sizeof(t_keys), 0);
 	if (init_shoot_anim(mlx))
 		return (NULL);
-	mlx->map = (t_map *)malloc(sizeof(t_map));
-	if (!mlx->map)
-		return (free(mlx), NULL);
-	mlx->image = (t_image *)malloc(sizeof(t_image));
-	if (!mlx->image)
-		return (free(mlx->map), free(mlx), NULL);
-	mlx->map->player = (t_player *)malloc(sizeof(t_player));
-	if (!mlx->map->player)
-		return (free(mlx->image), free(mlx->map), free(mlx), NULL);
-	mlx->keys = (t_keys *)malloc(sizeof(t_keys));
-	if (!mlx->keys)
-		return (free(mlx->map->player), free(mlx->image),
-			free(mlx->map), free(mlx), NULL);
 	return (mlx);
 }
 
@@ -62,7 +64,11 @@ int	main(int ac, char **av)
 	}
 	keyinit(mlx->keys);
 	init_player_map(mlx, av[1]);
-	init_mlx(mlx);
+	if (!init_mlx(mlx))
+	{
+		exit_game(mlx, 0);
+		return (0);
+	}
 	cleanup_mlx_structure(mlx);
 	return (0);
 }

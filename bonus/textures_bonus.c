@@ -1,204 +1,96 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   textures_bonus.c                                   :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ainouni <ainouni@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/15 02:18:15 by ainouni           #+#    #+#             */
+/*   Updated: 2025/03/15 02:21:00 by ainouni          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "cub3d_bonus.h"
 
-//#include "cub3d.h"
-
-unsigned int    get_textures_pixel(t_image *textures, int x, int y)
+static void	draw_ceiling(int x, int screen_start, t_draw_params params)
 {
-    char *pixel;
+	int	i;
 
-    if (x < 0 || y < 0 || x >= textures->width || y >= textures->height)
-        return (0);
-    pixel = textures->addr + (y * textures->line_length + x * (textures->bpp / 8));
-
-    return *(unsigned int*)pixel;
+	i = 0;
+	while (i < screen_start)
+	{
+		my_pixel_put(x, i, params.mlx->image, params.mlx->map->ceiling_color);
+		i++;
+	}
 }
 
-void draw_textured_strip(t_mlxing * mlx, int x, int start_y, int end_y, t_draw_params params)
+static void	draw_floor(int x, int screen_end, t_draw_params params)
 {
-    int     y = start_y;
-    double  step = params.texture->height / params.wall_height;
-    double  tex_pos = (start_y - WINDOW_HEIGHT/ 2 + params.wall_height / 2) * step;
-    int     i = 0;
-    int tex_y;
-    unsigned int    color;
+	int	i;
 
-    while (i < start_y)
-    {
-        my_pixel_put(x, i, mlx->image, mlx->map->ceiling_color);
-        i++;
-    }
-
-    while (y < end_y && y < WINDOW_HEIGHT)
-    {
-        if (y >= 0)
-        {
-            tex_y = (int)tex_pos & (params.texture->height - 1);
-            color = get_textures_pixel(params.texture, params.tex_x, tex_y);
-            my_pixel_put(x, y, mlx->image, color);
-        }
-        tex_pos +=  step;
-        y++;
-    }
-
-    i = end_y;
-    while (i < WINDOW_HEIGHT)
-    {
-        my_pixel_put(x, i, mlx->image, mlx->map->floor_color);
-        i++;
-    }
+	i = screen_end + 1;
+	while (i < WINDOW_HEIGHT)
+	{
+		my_pixel_put(x, i, params.mlx->image, params.mlx->map->floor_color);
+		i++;
+	}
 }
 
-void cleanup_textures(t_mlxing *mlx)
+void	draw_wall(t_utils *utils, t_wall_strip_params strip)
 {
-    for (int i = 0; i < 4; i++)
-    {
-        if (mlx->map->textures[i])
-        {
-            if (mlx->map->textures[i]->image)
-            {
-                if (mlx->map->textures[i]->image->img)
-                    mlx_destroy_image(mlx->mlx_connect, 
-                        mlx->map->textures[i]->image->img);
-                free(mlx->map->textures[i]->image);
-            }
-            free(mlx->map->textures[i]->name);
-            free(mlx->map->textures[i]);
-        }
-    }
+	utils->tex_y = (int)utils->tex_pos & (strip.params.texture->height - 1);
+	utils->color = get_textures_pixel(strip.params.texture, strip.params.tex_x,
+			utils->tex_y);
+	if (utils->color != 0x00000000)
+	{
+		my_pixel_put(strip.x, utils->y, strip.params.mlx->image, utils->color);
+		utils->j = 1;
+		while (utils->j < strip.sample_interval && utils->y
+			+ utils->j <= strip.screen_end)
+		{
+			my_pixel_put(strip.x, utils->y + utils->j, strip.params.mlx->image,
+				utils->color);
+			utils->j++;
+		}
+	}
+	utils->tex_pos += strip.step * strip.sample_interval;
+	utils->y += strip.sample_interval;
 }
 
-
-int init_textures(t_mlxing *mlx)
+static void	draw_wall_strip(t_wall_strip_params strip)
 {
-    int i = 0;
-    int width=0, height=0;
+	t_utils	utils;
 
-    // perror("init_textures");
-
-    while (i < 4)
-    {
-        mlx->map->textures[i]->image->img = mlx_xpm_file_to_image(mlx->mlx_connect,
-            mlx->map->textures[i]->name, &width, &height);
-        
-        if (!mlx->map->textures[i]->image->img)
-        {
-            printf("Error loading texture : %s\n", mlx->map->textures[i]->name);
-            return (0);
-        }
-
-        // (void)mlx;
-        // (void)width;
-        // (void)height;
-
-        mlx->map->textures[i]->image->width = width;
-        mlx->map->textures[i]->image->height = height;
-        mlx->map->textures[i]->image->addr = mlx_get_data_addr(
-            mlx->map->textures[i]->image->img,
-            &mlx->map->textures[i]->image->bpp,
-            &mlx->map->textures[i]->image->line_length,
-            &mlx->map->textures[i]->image->endian);
-        i++;
-    }
-    return (1);
+	utils.tex_pos = (strip.screen_start - WINDOW_HEIGHT / 2
+			+ strip.params.wall_height / 2) * strip.step;
+	utils.y = strip.screen_start;
+	while (utils.y <= strip.screen_end)
+	{
+		draw_wall(&utils, strip);
+	}
 }
 
+void	draw_textured_strip(int x, int start_y, int end_y, t_draw_params params)
+{
+	t_utils_	utils;
 
-//unsigned int    get_textures_pixel(t_image *textures, int x, int y)
-//{
-//    char *pixel;
-
-//    if (x < 0 || y < 0 || x >= textures->width || y >= textures->height)
-//        return (0);
-//    pixel = textures->addr + (y * textures->line_length + x * (textures->bpp / 8));
-
-//    return *(unsigned int*)pixel;
-//}
-
-//void draw_textured_strip(t_mlxing * mlx, int x, int start_y, int end_y, t_draw_params params)
-//{
-//    int     y = start_y;
-//    double  step = params.texture->height / params.wall_height;
-//    double  tex_pos = (start_y - WINDOW_HEIGHT/ 2 + params.wall_height / 2) * step;
-//    int     i = 0;
-//    int tex_y;
-//    unsigned int    color;
-
-//    while (i < start_y)
-//    {
-//        my_pixel_put(x, i, mlx->image, mlx->map->ceiling_color);
-//        i++;
-//    }
-
-//    while (y < end_y && y < WINDOW_HEIGHT)
-//    {
-//        if (y >= 0)
-//        {
-//            tex_y = (int)tex_pos & (params.texture->height - 1);
-//            color = get_textures_pixel(params.texture, params.tex_x, tex_y);
-//            my_pixel_put(x, y, mlx->image, color);
-//        }
-//        tex_pos +=  step;
-//        y++;
-//    }
-
-//    i = end_y;
-//    while (i < WINDOW_HEIGHT)
-//    {
-//        my_pixel_put(x, i, mlx->image, mlx->map->floor_color);
-//        i++;
-//    }
-//}
-
-//void cleanup_textures(t_mlxing *mlx)
-//{
-//    for (int i = 0; i < 4; i++)
-//    {
-//        if (mlx->map->textures[i])
-//        {
-//            if (mlx->map->textures[i]->image)
-//            {
-//                if (mlx->map->textures[i]->image->img)
-//                    mlx_destroy_image(mlx->mlx_connect, 
-//                        mlx->map->textures[i]->image->img);
-//                free(mlx->map->textures[i]->image);
-//            }
-//            free(mlx->map->textures[i]->name);
-//            free(mlx->map->textures[i]);
-//        }
-//    }
-//}
-
-
-//int init_textures(t_mlxing *mlx)
-//{
-//    int i = 0;
-//    int width=0, height=0;
-
-    
-
-//    while (i < 4)
-//    {
-//        mlx->map->textures[i]->image->img = mlx_xpm_file_to_image(mlx->mlx_connect,
-//            mlx->map->textures[i]->name, &width, &height);
-        
-//        if (!mlx->map->textures[i]->image->img)
-//        {
-//            printf("Error loading texture : %s\n", mlx->map->textures[i]->name);
-//            return (0);
-//        }
-
-//        // (void)mlx;
-//        // (void)width;
-//        // (void)height;
-
-//        mlx->map->textures[i]->image->width = width;
-//        mlx->map->textures[i]->image->height = height;
-//        mlx->map->textures[i]->image->addr = mlx_get_data_addr(
-//            mlx->map->textures[i]->image->img,
-//            &mlx->map->textures[i]->image->bpp,
-//            &mlx->map->textures[i]->image->line_length,
-//            &mlx->map->textures[i]->image->endian);
-//        i++;
-//    }
-//    return (1);
-//}
+	if (start_y >= WINDOW_HEIGHT || end_y < 0 || x < 0 || x >= WINDOW_WIDTH)
+		return ;
+	if (start_y < 0)
+		utils.screen_start = 0;
+	else
+		utils.screen_start = start_y;
+	if (end_y >= WINDOW_HEIGHT)
+		utils.screen_end = WINDOW_HEIGHT - 1;
+	else
+		utils.screen_end = end_y;
+	utils.step = (double)params.texture->height / params.wall_height;
+	utils.sample_interval = 1;
+	if (params.wall_height > WINDOW_HEIGHT * 2)
+		utils.sample_interval = 2;
+	draw_ceiling(x, utils.screen_start, params);
+	utils.strip = (t_wall_strip_params){x, utils.screen_start, utils.screen_end,
+		params, utils.step, utils.sample_interval};
+	draw_wall_strip(utils.strip);
+	draw_floor(x, utils.screen_end, params);
+}
